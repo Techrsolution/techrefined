@@ -67,7 +67,8 @@ iframe{width:100%;height:78vh;border:1px solid var(--line);border-radius:12px;ba
 <div class="wrap">
 <nav id="nav"></nav>
 <main>
- <!-- 1. DASHBOARD -->
+
+<!-- 1. DASHBOARD -->
 <section class="page" id="p-dashboard">
   <div class="grid">
     <div class="card"><h3>Balance</h3><div class="big" id="d-bal">—</div></div>
@@ -157,7 +158,8 @@ iframe{width:100%;height:78vh;border:1px solid var(--line);border-radius:12px;ba
   </div>
   <div id="tvbox" style="height:72vh"></div>
 </section>
-  <!-- 9. MANUAL TRADING -->
+
+<!-- 9. MANUAL TRADING -->
 <section class="page" id="p-manual">
   <div class="card">
     <h3>Manual trade <span class="mu" id="mlive"></span></h3>
@@ -187,7 +189,7 @@ const TYPES = [['DIGITOVER','Digits Over'],['DIGITUNDER','Digits Under'],['DIGIT
 /* ================================================ */
 
 const $ = id => document.getElementById(id);
-const S = {ws:null, appId:localStorage.getItem('appId')DEFAULT_APP_ID, token:sessionStorage.getItem('tok')'',
+const S = {ws:null, appId:localStorage.getItem('appId')||DEFAULT_APP_ID, token:sessionStorage.getItem('tok')||'',
   rid:1, pending:{}, tickSub:null, symbol:'R_100', pip:2, digits:[], prices:[], px:null,
   auth:false, currency:'USD', balance:null, trades:[], done:{}, tag:{},
   autoRun:false, autoBusy:false, autoCount:0, autoPL:0};
@@ -226,7 +228,8 @@ function onMsg(e){
   if(d.msg_type==='proposal_open_contract') onContract(d.proposal_open_contract);
 }
 function setStatus(on){ $('dot').className='dot'+(on?' on':''); $('cs').textContent = on?'Live':'Offline'; }
-[03/11/2026 16:58] The Undisputed: async function authorize(){
+
+async function authorize(){
   const a = await send({authorize:S.token});
   S.auth = true; S.currency = a.authorize.currency;
   S.balance = {balance:+a.authorize.balance, currency:a.authorize.currency};
@@ -273,7 +276,7 @@ async function trade(p){
   return b.buy;
 }
 function onContract(c){
-  if(!c  !c.is_sold  S.done[c.contract_id]) return;
+  if(!c || !c.is_sold || S.done[c.contract_id]) return;
   S.done[c.contract_id]=1;
   const pr = +c.profit, meta = S.tag[c.contract_id] || {tag:'manual',type:c.contract_type,stake:0};
   S.trades.unshift({time:new Date(),type:meta.type,tag:meta.tag,profit:pr});
@@ -316,8 +319,8 @@ async function autoStep(){
 }
 function stopAuto(msg){
   S.autoRun=false; $('abtn').textContent='Start'; $('abtn').className='green';
-  $('ast').textContent = msg'Stopped'; log(msg'Auto trader stopped');
-[03/11/2026 16:58] The Undisputed: }
+  $('ast').textContent = msg||'Stopped'; log(msg||'Auto trader stopped');
+}
 $('abtn').onclick = ()=>{
   if(S.autoRun){ stopAuto('Stopped'); return; }
   if(!S.auth){ log('Connect your account first (Dashboard).','err'); return; }
@@ -381,7 +384,8 @@ function aiLines(){
   const pr=S.prices.slice(-100), mv=pr[pr.length-1]-pr[0];
   L.push('Last '+pr.length+' ticks moved '+(mv>=0?'up ':'down ')+Math.abs(mv).toFixed(S.pip));
   const rets=[]; for(let i=1;i<S.prices.length;i++) rets.push(S.prices[i]-S.prices[i-1]);
-  L.push('Volatility, last 100 vs all ticks: '+sdev(rets.slice(-100)).toFixed(S.pip+1)+' vs '+sdev(rets).toFixed(S.pip+1)); return L;
+  L.push('Volatility, last 100 vs all ticks: '+sdev(rets.slice(-100)).toFixed(S.pip+1)+' vs '+sdev(rets).toFixed(S.pip+1));
+  return L;
 }
 function renderAI(){
   $('ai-sym').textContent=S.symbol;
