@@ -34,3 +34,429 @@ button:disabled{opacity:.5}
 .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
 .bars{display:flex;gap:6px;align-items:flex-end;height:150px;margin:10px 0}
 .bar{flex:1;text-align:center;display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+.fill{background:#34404f;border-radius:4px 4px 0 0;min-height:2px}
+.fill.hi{background:var(--gr)}.fill.lo{background:var(--rd)}
+.bar small{font-size:10px;color:var(--mu)}
+.last{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.dg{width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;font-weight:700;font-size:13px}
+.dg.e{background:#1d3b5c}.dg.o{background:#4a2a3a}
+.log{max-height:220px;overflow:auto;font-size:13px;color:var(--mu)}
+.log .err{color:var(--rd)}.log .ok{color:var(--gr)}
+.botgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.tag{font-size:11px;background:#2a3342;border-radius:20px;padding:2px 8px;color:var(--mu)}
+iframe{width:100%;height:78vh;border:1px solid var(--line);border-radius:12px;background:#fff}
+@media(max-width:800px){
+ .wrap{grid-template-columns:1fr}
+ nav{display:flex;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:8px;position:sticky;top:96px;background:var(--bg);z-index:4}
+ nav a{white-space:nowrap;margin:0 4px 0 0}
+ nav a.on{border-left:0;border-bottom:3px solid var(--ac)}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <b>Trading Hub</b>
+  <div class="hr">
+    <span><span class="dot" id="dot"></span><span id="cs">Connecting…</span></span>
+    <span id="hbal" class="mu"></span>
+    <select id="sym" style="width:auto;margin:0"></select>
+  </div>
+</header>
+
+<div class="wrap">
+<nav id="nav"></nav>
+<main>
+[03/11/2026 16:58] The Undisputed: <!-- 1. DASHBOARD -->
+<section class="page" id="p-dashboard">
+  <div class="grid">
+    <div class="card"><h3>Balance</h3><div class="big" id="d-bal">—</div></div>
+    <div class="card"><h3>Session P/L</h3><div class="big" id="d-pl">0.00</div></div>
+    <div class="card"><h3>Wins / Losses</h3><div class="big" id="d-wl">0 / 0</div></div>
+    <div class="card"><h3>Live price</h3><div class="big" id="d-px">—</div><div class="mu" id="d-dg"></div></div>
+  </div>
+  <div class="card">
+    <h3>Connect account</h3>
+    <div class="row">
+      <label>App ID<input id="appid" inputmode="numeric"></label>
+      <label>API token (Read + Trade)<input id="tok" type="password" autocomplete="off"></label>
+    </div>
+    <button id="cbtn">Connect</button>
+    <p class="mu">Use a <b>demo account</b> token while testing. The token is kept only in this browser tab (session storage), never in the code.</p>
+  </div>
+  <div class="card">
+    <h3>Recent trades</h3>
+    <div id="d-trades" class="log">No trades yet.</div>
+  </div>
+</section>
+
+<!-- 2. BOT BUILDER -->
+<section class="page" id="p-builder">
+  <div class="card">
+    <p class="mu" style="margin-top:0">Build and run bots with the Deriv Bot builder. If the frame stays blank, your browser blocks embedding, so open it in a new tab. Use <b>Import</b> inside the builder to load a bot XML file.</p>
+    <a class="btn alt" href="https://bot.deriv.com" target="_blank" rel="noopener">Open in new tab</a>
+  </div>
+  <iframe src="https://bot.deriv.com" title="Bot builder" loading="lazy"></iframe>
+</section>
+
+<!-- 3. BEST BOTS -->
+<section class="page" id="p-bots">
+  <div class="card"><p class="mu" style="margin:0">Download a bot, then open the Bot Builder and import the XML file. Edit the <code>BOTS</code> list in this file to add your own bots (put the XML files in a <code>bots/</code> folder in your repo).</p></div>
+  <div class="botgrid" id="botlist"></div>
+</section>
+
+<!-- 5. AI ANALYSIS -->
+<section class="page" id="p-ai">
+  <div class="card">
+    <h3>Market read (live, <span id="ai-sym"></span>)</h3>
+    <div id="aitxt" class="mu">Collecting ticks…</div>
+    <p class="mu">Rule-based summary of the last ticks. Synthetic indices are random, so this describes what happened. It does not predict what comes next.</p>
+  </div>
+  <div class="card" id="aiBox" style="display:none">
+    <h3>Ask your AI endpoint</h3>
+    <button id="aibtn" class="alt">Send stats to AI</button>
+    <div id="aiout" class="mu" style="margin-top:10px;white-space:pre-wrap"></div>
+  </div>
+</section>
+
+<!-- 6. D ANALYSIS -->
+<section class="page" id="p-digits">
+  <div class="card">
+    <div class="row">
+      <label>Sample (ticks)<select id="dn"><option>50</option><option selected>100</option><option>500</option><option>1000</option></select></label>
+      <label>Barrier digit<select id="ob"></select></label>
+    </div>
+    <div class="bars" id="bars"></div>
+    <div id="dsum" class="mu"></div>
+    <div class="last" id="last"></div>
+  </div>
+</section>
+
+<!-- 7. AUTO TRADES -->
+<section class="page" id="p-auto">
+  <div class="card">
+    <h3>Auto trader</h3>
+    <div class="row" id="aform"></div>
+    <div class="row">
+      <label>Max trades<input id="amax" type="number" min="1" value="10"></label>
+      <label>Take profit<input id="atp" type="number" min="0" step="0.01" value="5"></label>
+      <label>Stop loss<input id="asl" type="number" min="0" step="0.01" value="5"></label>
+    </div>
+    <button id="abtn" class="green">Start</button>
+    <span id="ast" class="mu" style="margin-left:10px">Stopped</span>
+    <p class="mu">Places one trade at a time on the connected account until a limit is hit. No stake increases after losses.</p>
+  </div>
+  <div class="card"><h3>Auto trade log</h3><div id="alog" class="log"></div></div>
+</section>
+
+<!-- 8. TRADING VIEW -->
+<section class="page" id="p-tv">
+  <div class="card">
+    <label>TradingView symbol<input id="tvsym" value="OANDA:XAUUSD"></label>
+    <button id="tvbtn" class="alt">Load chart</button>
+  </div>
+  <div id="tvbox" style="height:72vh"></div>
+</section>
+  <!-- 9. MANUAL TRADING -->
+<section class="page" id="p-manual">
+  <div class="card">
+    <h3>Manual trade <span class="mu" id="mlive"></span></h3>
+    <div class="row" id="mform"></div>
+    <div id="mq" class="mu" style="margin:6px 0 12px">Price: —</div>
+    <button id="mbuy" class="green">Buy</button>
+  </div>
+  <div class="card"><h3>Trade log</h3><div id="mlog" class="log"></div></div>
+</section>
+
+</main>
+</div>
+
+<script>
+/* ============ SETTINGS YOU CAN EDIT ============ */
+const DEFAULT_APP_ID = '1089';          // replace with your own Deriv app ID
+const AI_ENDPOINT = '';                  // optional: URL of your own AI backend (POST JSON, returns {reply:"..."})
+const BOTS = [                           // add your bots here
+  {name:'Over/Under Bulk Trader', tag:'Digits',  desc:'Digit Over/Under bulk trading, both sides switchable.', file:'bots/over-under-bulk.xml'},
+  {name:'Matches Hunter',        tag:'Digits',  desc:'Digit Matches bot driven by digit analysis.',           file:'bots/matches-hunter.xml'},
+  {name:'Even/Odd Switcher',     tag:'Digits',  desc:'Even/Odd bot with a stake reset on win.',               file:'bots/even-odd.xml'}
+];
+const SYMBOLS = [['R_10','Volatility 10'],['R_25','Volatility 25'],['R_50','Volatility 50'],['R_75','Volatility 75'],['R_100','Volatility 100'],
+  ['1HZ10V','Vol 10 (1s)'],['1HZ25V','Vol 25 (1s)'],['1HZ50V','Vol 50 (1s)'],['1HZ75V','Vol 75 (1s)'],['1HZ100V','Vol 100 (1s)']];
+const PAGES = [['dashboard','Dashboard'],['builder','Bot Builder'],['bots','Best Bots'],['ai','AI Analysis'],['digits','D Analysis'],['auto','Auto Trades'],['tv','Trading View'],['manual','Manual Trading']];
+const TYPES = [['DIGITOVER','Digits Over'],['DIGITUNDER','Digits Under'],['DIGITMATCH','Digits Matches'],['DIGITDIFF','Digits Differs'],['DIGITEVEN','Digits Even'],['DIGITODD','Digits Odd'],['CALL','Rise'],['PUT','Fall']];
+/* ================================================ */
+
+const $ = id => document.getElementById(id);
+const S = {ws:null, appId:localStorage.getItem('appId')DEFAULT_APP_ID, token:sessionStorage.getItem('tok')'',
+  rid:1, pending:{}, tickSub:null, symbol:'R_100', pip:2, digits:[], prices:[], px:null,
+  auth:false, currency:'USD', balance:null, trades:[], done:{}, tag:{},
+  autoRun:false, autoBusy:false, autoCount:0, autoPL:0};
+
+/* ---------- connection ---------- */
+function connect(){
+  return new Promise((ok,fail)=>{
+    if(S.ws && S.ws.readyState===1){ok();return;}
+    const ws = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id='+S.appId);
+    S.ws = ws;
+    ws.onopen = ()=>{setStatus(true);ok();};
+    ws.onerror = ()=>fail(new Error('Connection failed'));
+    ws.onmessage = onMsg;
+    ws.onclose = ()=>{
+      setStatus(false); S.auth=false; S.tickSub=null;
+      Object.values(S.pending).forEach(p=>p.rej(new Error('Disconnected'))); S.pending={};
+      setTimeout(()=>connect().then(resub).catch(()=>{}),3000);
+    };
+  });
+}
+async function resub(){ try{ await startTicks(); if(S.token) await authorize(); }catch(e){log(e.message,'err');} }
+function send(r){
+  return new Promise((res,rej)=>{
+    if(!S.ws || S.ws.readyState!==1) return rej(new Error('Not connected'));
+    const id = S.rid++; r.req_id = id; S.pending[id] = {res,rej};
+    S.ws.send(JSON.stringify(r));
+  });
+}
+function onMsg(e){
+  const d = JSON.parse(e.data);
+  const p = S.pending[d.req_id];
+  if(p){ delete S.pending[d.req_id]; d.error ? p.rej(new Error(d.error.message)) : p.res(d); }
+  else if(d.error){ log(d.error.message,'err'); }
+  if(d.msg_type==='tick' && d.tick && d.tick.symbol===S.symbol) onTick(d.tick);
+  if(d.msg_type==='balance' && d.balance){ S.balance = d.balance; renderBalance(); }
+  if(d.msg_type==='proposal_open_contract') onContract(d.proposal_open_contract);
+}
+function setStatus(on){ $('dot').className='dot'+(on?' on':''); $('cs').textContent = on?'Live':'Offline'; }
+[03/11/2026 16:58] The Undisputed: async function authorize(){
+  const a = await send({authorize:S.token});
+  S.auth = true; S.currency = a.authorize.currency;
+  S.balance = {balance:+a.authorize.balance, currency:a.authorize.currency};
+  renderBalance();
+  send({balance:1,subscribe:1}).catch(()=>{});
+  log('Connected: '+a.authorize.loginid+' ('+a.authorize.currency+')','ok');
+}
+
+/* ---------- ticks ---------- */
+const dig = p => Number(p.toFixed(S.pip).slice(-1));
+async function startTicks(){
+  if(S.tickSub){ send({forget:S.tickSub}).catch(()=>{}); S.tickSub=null; }
+  const h = await send({ticks_history:S.symbol,count:1000,end:'latest',style:'ticks'});
+  S.pip = h.pip_size; S.prices = h.history.prices.slice(); S.digits = S.prices.map(dig);
+  S.px = S.prices[S.prices.length-1];
+  const t = await send({ticks:S.symbol,subscribe:1});
+  S.tickSub = t.subscription && t.subscription.id;
+  renderLive(); renderPage();
+}
+function onTick(t){
+  if(t.pip_size!=null) S.pip=t.pip_size;
+  S.px=t.quote; S.prices.push(t.quote); S.digits.push(dig(t.quote));
+  if(S.prices.length>1000){S.prices.shift();S.digits.shift();}
+  renderLive();
+  const pg=cur(); if(pg==='digits'||pg==='ai') renderPage();
+  if(S.autoRun) autoStep();
+}
+
+/* ---------- trading ---------- */
+const needsBarrier = t => ['DIGITOVER','DIGITUNDER','DIGITMATCH','DIGITDIFF'].includes(t);
+function propReq(p){
+  const r = {proposal:1,amount:p.stake,basis:'stake',contract_type:p.type,currency:S.currency,duration:p.dur,duration_unit:'t',symbol:S.symbol};
+  if(needsBarrier(p.type)) r.barrier = String(p.barrier);
+  return r;
+}
+async function trade(p){
+  if(!S.auth) throw new Error('Connect your account first (Dashboard).');
+  const prop = await send(propReq(p));
+  const b = await send({buy:prop.proposal.id,price:prop.proposal.ask_price});
+  const id = b.buy.contract_id;
+  S.tag[id] = {tag:p.tag,type:p.type,stake:p.stake};
+  log('Bought '+p.type+(needsBarrier(p.type)?' '+p.barrier:'')+' | stake '+p.stake+' | #'+id);
+  send({proposal_open_contract:1,contract_id:id,subscribe:1}).catch(()=>{});
+  return b.buy;
+}
+function onContract(c){
+  if(!c  !c.is_sold  S.done[c.contract_id]) return;
+  S.done[c.contract_id]=1;
+  const pr = +c.profit, meta = S.tag[c.contract_id] || {tag:'manual',type:c.contract_type,stake:0};
+  S.trades.unshift({time:new Date(),type:meta.type,tag:meta.tag,profit:pr});
+  log((pr>=0?'WIN +':'LOSS ')+pr.toFixed(2)+' | #'+c.contract_id, pr>=0?'ok':'err');
+  renderStats();
+  if(meta.tag==='auto'){
+    S.autoBusy=false; S.autoPL+=pr;
+    const tp=+$('atp').value, sl=+$('asl').value, mx=+$('amax').value;
+    if(tp>0 && S.autoPL>=tp) stopAuto('Take profit reached');
+    else if(sl>0 && S.autoPL<=-sl) stopAuto('Stop loss reached');
+    else if(S.autoCount>=mx) stopAuto('Max trades reached');
+  }
+}
+const readP = p => ({type:$(p+'t').value,barrier:$(p+'b').value,dur:+$(p+'d').value,stake:+$(p+'s').value,tag:p==='a'?'auto':'manual'});
+
+/* manual */
+let qT;
+function quote(){
+  clearTimeout(qT);
+  qT = setTimeout(async()=>{
+    try{
+      const r = await send(propReq(readP('m')));
+      const q = r.proposal;
+      $('mq').textContent = 'Price '+q.ask_price+' | Payout '+q.payout+' | '+q.longcode;
+    }catch(e){ $('mq').textContent = e.message; }
+  },400);
+}
+$('mbuy').onclick = async()=>{
+  $('mbuy').disabled=true;
+  try{ await trade(readP('m')); }catch(e){ log(e.message,'err'); }
+  $('mbuy').disabled=false;
+};
+
+/* auto */
+async function autoStep(){
+  if(!S.autoRun || S.autoBusy) return;
+  S.autoBusy=true;
+  try{ await trade(readP('a')); S.autoCount++; $('ast').textContent='Running · '+S.autoCount+' trades · P/L '+S.autoPL.toFixed(2); }
+  catch(e){ S.autoBusy=false; stopAuto('Stopped: '+e.message); }
+}
+function stopAuto(msg){
+  S.autoRun=false; $('abtn').textContent='Start'; $('abtn').className='green';
+  $('ast').textContent = msg'Stopped'; log(msg'Auto trader stopped');
+[03/11/2026 16:58] The Undisputed: }
+$('abtn').onclick = ()=>{
+  if(S.autoRun){ stopAuto('Stopped'); return; }
+  if(!S.auth){ log('Connect your account first (Dashboard).','err'); return; }
+  if(!confirm('Auto trading places real trades on the connected account. Start?')) return;
+  S.autoRun=true; S.autoBusy=false; S.autoCount=0; S.autoPL=0;
+  $('abtn').textContent='Stop'; $('abtn').className=''; $('ast').textContent='Running';
+};
+
+/* ---------- renderers ---------- */
+function log(m,c){
+  ['mlog','alog'].forEach(id=>{
+    const e=$(id); if(!e) return;
+    const d=document.createElement('div'); if(c) d.className=c;
+    d.textContent = new Date().toLocaleTimeString()+'  '+m;
+    e.prepend(d);
+  });
+}
+function renderBalance(){
+  if(!S.balance) return;
+  const t = (+S.balance.balance).toFixed(2)+' '+S.balance.currency;
+  $('d-bal').textContent=t; $('hbal').textContent=t;
+}
+function renderLive(){
+  if(S.px==null) return;
+  const d = S.digits[S.digits.length-1];
+  $('d-px').textContent = S.px; $('d-dg').textContent = 'Last digit: '+d+' · '+S.symbol;
+  $('mlive').textContent = '· '+S.px+' (digit '+d+')';
+}
+function renderStats(){
+  const pl = S.trades.reduce((a,t)=>a+t.profit,0), w = S.trades.filter(t=>t.profit>=0).length;
+  const e=$('d-pl'); e.textContent=pl.toFixed(2); e.className='big '+(pl>=0?'g':'r');
+  $('d-wl').textContent = w+' / '+(S.trades.length-w);
+  $('d-trades').innerHTML = S.trades.length ? '' : 'No trades yet.';
+  S.trades.slice(0,15).forEach(t=>{
+    const d=document.createElement('div'); d.className=t.profit>=0?'ok':'err';
+    d.textContent = t.time.toLocaleTimeString()+'  '+t.type+' ('+t.tag+')  '+(t.profit>=0?'+':'')+t.profit.toFixed(2);
+    $('d-trades').append(d);
+  });
+}
+function stats(n){
+  const d=S.digits.slice(-n), c=Array(10).fill(0); d.forEach(x=>c[x]++);
+  return {d,c,p:c.map(x=>d.length?x/d.length*100:0)};
+}
+const sdev = a => { if(a.length<2) return 0; const m=a.reduce((x,y)=>x+y,0)/a.length; return Math.sqrt(a.reduce((x,y)=>x+(y-m)*(y-m),0)/(a.length-1)); };
+function renderDigits(){
+  const {d,c,p} = stats(+$('dn').value), n=d.length; if(!n) return;
+  const mx=Math.max(...p), mn=Math.min(...p), b=+$('ob').value;
+  $('bars').innerHTML = p.map((v,i)=>'<div class="bar"><div class="fill '+(v===mx?'hi':v===mn?'lo':'')+'" style="height:'+Math.max(2,v/mx*100)+'px"></div><b>'+i+'</b><small>'+v.toFixed(1)+'%</small></div>').join('');
+  const ev=d.filter(x=>x%2===0).length/n*100, ov=d.filter(x=>x>b).length/n*100, un=d.filter(x=>x<b).length/n*100;
+  $('dsum').innerHTML = 'Most frequent: <b class="g">'+p.indexOf(mx)+'</b> · Least: <b class="r">'+p.indexOf(mn)+'</b><br>Even '+ev.toFixed(1)+'% / Odd '+(100-ev).toFixed(1)+'%<br>Over '+b+': '+ov.toFixed(1)+'% · Under '+b+': '+un.toFixed(1)+'% · Equal: '+(100-ov-un).toFixed(1)+'%';
+  $('last').innerHTML = S.digits.slice(-30).map(x=>'<span class="dg '+(x%2?'o':'e')+'">'+x+'</span>').join('');
+}
+function aiLines(){
+  const n=Math.min(S.digits.length,500); if(n<30) return null;
+  const {d,c}=stats(n), sd=Math.sqrt(.1*.9/n)*100, L=[];
+  c.forEach((v,i)=>{ const p=v/n*100, z=(p-10)/sd; if(Math.abs(z)>=1.5) L.push('Digit '+i+': '+p.toFixed(1)+'% ('+(z>0?'above':'below')+' the 10% average, z='+z.toFixed(1)+')'); });
+  if(!L.length) L.push('No digit deviates noticeably from 10%.');
+  const ev=d.filter(x=>x%2===0).length/n*100; L.push('Even/Odd: '+ev.toFixed(1)+'% / '+(100-ev).toFixed(1)+'% (last '+n+' ticks)');
+  let s=1; for(let i=d.length-1;i>0&&d[i]%2===d[i-1]%2;i--) s++;
+  L.push('Current '+(d[d.length-1]%2?'odd':'even')+' streak: '+s);
+  const pr=S.prices.slice(-100), mv=pr[pr.length-1]-pr[0];
+  L.push('Last '+pr.length+' ticks moved '+(mv>=0?'up ':'down ')+Math.abs(mv).toFixed(S.pip));
+  const rets=[]; for(let i=1;i<S.prices.length;i++) rets.push(S.prices[i]-S.prices[i-1]);
+  L.push('Volatility, last 100 vs all ticks: '+sdev(rets.slice(-100)).toFixed(S.pip+1)+' vs '+sdev(rets).toFixed(S.pip+1)); return L;
+}
+function renderAI(){
+  $('ai-sym').textContent=S.symbol;
+  const L=aiLines();
+  $('aitxt').innerHTML = L ? '<ul style="margin:0;padding-left:18px">'+L.map(x=>'<li>'+x+'</li>').join('')+'</ul>' : 'Collecting ticks…';
+}
+function renderPage(){ const p=cur(); if(p==='digits') renderDigits(); if(p==='ai') renderAI(); }
+
+/* ---------- AI endpoint (optional) ---------- */
+if(AI_ENDPOINT){
+  $('aiBox').style.display='block';
+  $('aibtn').onclick = async()=>{
+    $('aiout').textContent='Thinking…';
+    try{
+      const r = await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol:S.symbol,summary:aiLines(),digits:S.digits.slice(-200)})});
+      $('aiout').textContent = (await r.json()).reply || 'No reply';
+    }catch(e){ $('aiout').textContent = e.message; }
+  };
+}
+
+/* ---------- Best bots ---------- */
+$('botlist').innerHTML = BOTS.map(b=>'<div class="card"><span class="tag">'+b.tag+'</span><h4 style="margin:8px 0 4px">'+b.name+'</h4><p class="mu">'+b.desc+'</p><a class="btn" href="'+b.file+'" download>Download XML</a> <a class="btn alt" href="#builder">Bot Builder</a></div>').join('');
+
+/* ---------- TradingView ---------- */
+let tvLoaded=false;
+function loadTV(){
+  const go=()=>{ $('tvbox').innerHTML=''; new TradingView.widget({autosize:true,symbol:$('tvsym').value,interval:'5',timezone:'Africa/Nairobi',theme:'dark',style:'1',locale:'en',container_id:'tvbox',allow_symbol_change:true}); };
+  if(window.TradingView){ go(); return; }
+  const s=document.createElement('script'); s.src='https://s3.tradingview.com/tv.js'; s.onload=go; document.head.append(s);
+}
+$('tvbtn').onclick=loadTV;
+
+/* ---------- forms ---------- */
+const form = p => '<label>Contract<select id="'+p+'t">'+TYPES.map(t=>'<option value="'+t[0]+'">'+t[1]+'</option>').join('')+'</select></label>'+
+  '<label>Digit / barrier<select id="'+p+'b">'+[0,1,2,3,4,5,6,7,8,9].map(i=>'<option>'+i+'</option>').join('')+'</select></label>'+
+  '<label>Ticks<input id="'+p+'d" type="number" min="1" max="10" value="1"></label>'+
+  '<label>Stake<input id="'+p+'s" type="number" min="0.35" step="0.01" value="1"></label>';
+$('mform').innerHTML = form('m'); $('aform').innerHTML = form('a');
+$('ob').innerHTML = [0,1,2,3,4,5,6,7,8,9].map(i=>'<option'+(i===4?' selected':'')+'>'+i+'</option>').join('');
+$('mform').addEventListener('input',quote);
+$('dn').onchange=$('ob').onchange=renderDigits;
+
+/* ---------- nav + routing ---------- */
+const cur = () => (location.hash.slice(1)||'dashboard');
+$('nav').innerHTML = PAGES.map(p=>'<a href="#'+p[0]+'" data-p="'+p[0]+'">'+p[1]+'</a>').join('');
+function route(){
+  const k = PAGES.some(p=>p[0]===cur()) ? cur() : 'dashboard';
+  document.querySelectorAll('.page').forEach(e=>e.classList.toggle('on',e.id==='p-'+k));
+  document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.p===k));
+  if(k==='tv' && !tvLoaded){ tvLoaded=true; loadTV(); }
+  if(k==='manual') quote();
+  renderPage(); scrollTo(0,0);
+}
+addEventListener('hashchange',route);
+
+/* ---------- symbol + account ---------- */
+$('sym').innerHTML = SYMBOLS.map(s=>'<option value="'+s[0]+'"'+(s[0]===S.symbol?' selected':'')+'>'+s[1]+'</option>').join('');
+$('sym').onchange = ()=>{ S.symbol=$('sym').value; S.digits=[];S.prices=[]; startTicks().catch(e=>log(e.message,'err')); };
+$('appid').value = S.appId; $('tok').value = S.token;
+$('cbtn').onclick = async()=>{
+  const a=$('appid').value.trim()||DEFAULT_APP_ID, t=$('tok').value.trim();
+  try{
+    if(a!==S.appId){
+      S.appId=a; localStorage.setItem('appId',a);
+      S.ws.onclose=null; S.ws.close(); S.ws=null; S.auth=false; S.tickSub=null;
+      await connect(); await startTicks();
+    }
+    S.token=t; sessionStorage.setItem('tok',t);
+    if(t) await authorize(); else log('Enter a token to trade.','err');
+  }catch(e){ log(e.message,'err'); }
+};
+
+/* ---------- start ---------- */
+route(); renderStats();
+connect().then(resub).catch(e=>log(e.message,'err'));
+</script>
+</body>
+</html>
