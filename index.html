@@ -398,9 +398,11 @@ ul.sig{margin:0;padding-left:18px}ul.sig li{margin:3px 0}
 <div id="toast"></div>
 <div class="modal" id="m-login" hidden><div class="mbox">
   <h3>Connect your Deriv account</h3>
-  <label>App ID (from developers.deriv.com)<input id="l-app" inputmode="numeric"></label>
+  <label>App ID (from developers.deriv.com)<input id="l-app" autocomplete="off" autocapitalize="off"></label>
   <label>Personal access token (trade scope)<input id="l-tok" type="password" autocomplete="off"></label>
-  <label>Account ID (for example VRTC… for demo, or DOT…)<input id="l-acct" autocomplete="off"></label>
+  <button class="btn ghost" type="button" data-act="l-find" style="margin-bottom:8px">Find my accounts</button>
+  <div class="note" id="l-accts" style="margin-bottom:10px"></div>
+  <label>Account ID (tap one above, or type it)<input id="l-acct" autocomplete="off" autocapitalize="off"></label>
   <p class="note">Use a <b>demo</b> account first. The token stays in this browser tab only and is never stored in the site code. Market data and analysis work without logging in.</p>
   <button class="btn" data-act="l-ok">Connect</button> <button class="btn ghost" data-act="close">Cancel</button>
 </div></div>
@@ -946,11 +948,23 @@ async function doLogin(){
   try{await W.ready;await loadSymbols();await afterOpen();if(S.auth){$('m-login').hidden=true;toast('Connected')}else toast('Connected for market data only. '+(S.api==='new'?'Add your Account ID to trade.':'Token not accepted.'),1);for(const s of Object.keys(T))load(s).catch(()=>{})}
   catch(e){toast(e.message,1)}
 }
+async function findAccounts(){
+  const a=$('l-app').value.trim(),t=$('l-tok').value.trim(),box=$('l-accts');
+  if(!a||!t){box.textContent='Enter the App ID and token first.';return}
+  box.textContent='Looking…';
+  try{
+    const r=await fetch('https://api.derivws.com/trading/v1/options/accounts',{headers:{'Authorization':'Bearer '+t,'Deriv-App-ID':a}});
+    const txt=await r.text();if(!r.ok)throw new Error('('+r.status+') '+txt.slice(0,200));
+    const j=JSON.parse(txt),found=[],seen={};
+    (function walk(o){if(Array.isArray(o))return o.forEach(walk);if(o&&typeof o==='object'){const id=o.account_id||o.accountId||o.loginid||o.id;if(typeof id==='string'&&/^[A-Za-z]{2,5}\d+/.test(id)&&!seen[id]){seen[id]=1;found.push({id,type:o.account_type||o.type||'',cur:o.currency||'',bal:o.balance})}Object.values(o).forEach(walk)}})(j);
+    box.innerHTML=found.length?'Tap your account:<br>'+found.map(f=>`<button class="mini" type="button" data-acct="${esc(f.id)}" style="margin:4px 4px 0 0">${esc(f.id)}${f.type?' · '+esc(f.type):''}${f.cur?' · '+esc(f.cur):''}${f.bal!=null?' · '+esc(f.bal):''}</button>`).join(''):'No account IDs recognised. Raw reply: '+esc(txt.slice(0,300));
+  }catch(e){box.textContent='Could not list accounts: '+e.message}
+}
 function exportBot(){const c=formToCfg(),b=new Blob([JSON.stringify(c,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=(c.name||'bot').replace(/\W+/g,'_')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
 
 /* ---------- events ---------- */
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-act],[data-load],[data-my],[data-del],[data-use],[data-f],[data-m],[data-r],[data-md],[data-st],[data-buy],[data-p],[data-filter],[data-scan]');if(!t)return;
+  const t=e.target.closest('[data-act],[data-load],[data-my],[data-del],[data-use],[data-f],[data-m],[data-r],[data-md],[data-st],[data-buy],[data-p],[data-filter],[data-scan],[data-acct]');if(!t)return;
   const d=t.dataset;
   if(d.act){const a=d.act;
     if(a==='risk')$('m-risk').hidden=false;
@@ -968,10 +982,12 @@ document.addEventListener('click',e=>{
     else if(a==='a-scan')scan();
     else if(a==='a-go'){if(B.run&&B.label==='auto')botStop('Stopped');else if(A.best)autoStart(A.best)}
     else if(a==='tv-load')tvWidget();
+    else if(a==='l-find')findAccounts();
     else if(a==='open-tx'){S.ptab='tx';$('panel').classList.remove('shut');$('panel').classList.add('open');renderPanel()}
     else if(a==='m-prev'||a==='m-next'){M.g=MG[(MG.indexOf(M.g)+(a==='m-next'?1:3))%4];M.legs=legsFor(M.g);renderLegs()}
     else if(a==='ai-ask')aiAsk();
     return}
+  if(d.acct){$('l-acct').value=d.acct;$('l-accts').textContent='Selected '+d.acct;return}
   if(d.load!=null)loadBot(+d.load);
   else if(d.my){const b=myBots().find(x=>x.id==d.my);if(b){CF=Object.assign({},DEF,b.cfg);cfgToForm();go('builder')}}
   else if(d.del){store.set('myBots',myBots().filter(x=>x.id!=d.del));renderDash()}
