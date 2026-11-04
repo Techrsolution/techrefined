@@ -195,7 +195,8 @@ ul.sig{margin:0;padding-left:18px}ul.sig li{margin:3px 0}
 @media(max-width:900px){
  body{overflow:auto}.shell{display:block}
  main{overflow:visible;padding:14px 12px 120px}
- aside{position:fixed;left:0;right:0;bottom:0;width:auto;height:62vh;z-index:30;border-top:2px solid var(--pur2)}
+ aside{display:none;position:fixed;left:0;right:0;bottom:0;width:auto;height:62vh;z-index:30;border-top:2px solid var(--pur2)}
+ aside.open{display:flex}
  h1.hero{font-size:30px}
  .run{order:-2;margin-left:0}.tbtn{order:-1}
  .mgrid{grid-template-columns:1fr}
@@ -215,7 +216,7 @@ ul.sig{margin:0;padding-left:18px}ul.sig li{margin:3px 0}
   <a class="pill tg" id="lt" target="_blank" rel="noopener" hidden>Join Telegram</a>
   <a class="pill wa" id="lw" target="_blank" rel="noopener" hidden>WhatsApp Channel</a>
   <span class="sp"></span>
-  <span class="st"><i class="dot" id="dot"></i><span id="cs">Connecting…</span></span>
+  <span class="st" data-act="open-jr" style="cursor:pointer"><i class="dot" id="dot"></i><span id="cs">Connecting…</span></span>
   <div class="acct" id="acct" hidden><span id="bal">—</span><span class="badge" id="atype">Demo</span></div>
   <button class="pill conn" id="loginb" data-act="login">Connect account</button>
 </header>
@@ -397,9 +398,10 @@ ul.sig{margin:0;padding-left:18px}ul.sig li{margin:3px 0}
 <div id="toast"></div>
 <div class="modal" id="m-login" hidden><div class="mbox">
   <h3>Connect your Deriv account</h3>
-  <label>App ID<input id="l-app" inputmode="numeric"></label>
-  <label>API token (Read + Trade scopes)<input id="l-tok" type="password" autocomplete="off"></label>
-  <p class="note">Create a token in your Deriv account settings under API token. Use a <b>demo</b> account token first. The token stays in this browser tab only and is never stored in the site code.</p>
+  <label>App ID (from developers.deriv.com)<input id="l-app" inputmode="numeric"></label>
+  <label>Personal access token (trade scope)<input id="l-tok" type="password" autocomplete="off"></label>
+  <label>Account ID (for example VRTC… for demo, or DOT…)<input id="l-acct" autocomplete="off"></label>
+  <p class="note">Use a <b>demo</b> account first. The token stays in this browser tab only and is never stored in the site code. Market data and analysis work without logging in.</p>
   <button class="btn" data-act="l-ok">Connect</button> <button class="btn ghost" data-act="close">Cancel</button>
 </div></div>
 <div class="modal" id="m-risk" hidden><div class="mbox">
@@ -474,16 +476,43 @@ let CF=Object.assign({},DEF,store.get('cfg',{}));
 const W={ws:null,rid:1,pend:{},ready:null};
 
 /* ---------- connection ---------- */
-function setStatus(on){$('dot').className='dot'+(on?' on':'');$('cs').textContent=on?'Live':'Offline'}
+const NEW_PUBLIC='wss://api.derivws.com/trading/v1/options/ws/public';
+const NEW_REST='https://api.derivws.com/trading/v1/options/accounts/';
+const legacyUrl=id=>'wss://ws.derivws.com/websockets/v3?app_id='+encodeURIComponent(id);
+S.api=sess.get('api')||'new';S.acct=sess.get('acct');S.authed=false;
+Object.assign(W,{fails:0,err:'',url:'',opened:false,rt:0});
+function setStatus(on,txt){$('dot').className='dot'+(on?' on':'');$('cs').textContent=txt||(on?'Live':'Offline');$('cs').parentNode.title=(W.url||'')+(W.err?' · '+W.err:'')+' (click for details)'}
+const statusText=()=>'Live · '+(S.authed?'trading API':S.api==='new'?'new API':'legacy API');
+async function getUrl(){
+  if(S.token&&S.acct){
+    let r;try{r=await fetch(NEW_REST+encodeURIComponent(S.acct)+'/otp',{method:'POST',headers:{'Authorization':'Bearer '+S.token,'Deriv-App-ID':S.appId}})}catch(e){throw new Error('Could not reach the Deriv token service (blocked, offline or CORS): '+e.message)}
+    const txt=await r.text();if(!r.ok)throw new Error('Token request failed ('+r.status+'): '+txt.slice(0,160));
+    let j;try{j=JSON.parse(txt)}catch(e){throw new Error('Unexpected token reply: '+txt.slice(0,120))}
+    const u=j.data&&j.data.url;if(!u)throw new Error('Token reply had no connection URL: '+txt.slice(0,120));
+    S.api='new';S.authed=true;S.virtual=/\/demo(\?|\/|$)/.test(u);S.login=S.acct;return u;
+  }
+  S.authed=false;return S.api==='legacy'?legacyUrl(S.appId):NEW_PUBLIC;
+}
+function retry(){clearTimeout(W.rt);W.rt=setTimeout(()=>{connect();resume()},3000)}
 function connect(){
-  W.ready=new Promise((res,rej)=>{
-    let ws;try{ws=new WebSocket('wss://ws.derivws.com/websockets/v3?app_id='+encodeURIComponent(S.appId))}catch(e){rej(e);return}
-    W.ws=ws;
-    ws.onopen=()=>{setStatus(true);res()};
-    ws.onmessage=onMsg;
-    ws.onerror=()=>{};
-    ws.onclose=()=>{setStatus(false);S.auth=false;renderAcct();Object.values(W.pend).forEach(p=>p.rej(new Error('Disconnected')));W.pend={};Object.values(T).forEach(t=>t.sub=null);V.sub=null;rej(new Error('Offline'));setTimeout(()=>{connect();resume()},3000)};
-  });
+  W.opened=false;
+  W.ready=(async()=>{
+    const url=await getUrl().catch(e=>{W.err=e.message;setStatus(false,'Offline');jr('Connection: '+e.message,'err');retry();throw e});
+    W.url=url;
+    await new Promise((res,rej)=>{
+      let ws;try{ws=new WebSocket(url)}catch(e){W.err=e.message;rej(e);return}
+      W.ws=ws;
+      ws.onopen=()=>{W.opened=true;W.fails=0;W.err='';setStatus(true,statusText());jr('Connected to '+url.split('?')[0],'ok');res()};
+      ws.onmessage=onMsg;
+      ws.onerror=()=>{};
+      ws.onclose=ev=>{
+        const was=W.opened;setStatus(false,'Offline');S.auth=false;renderAcct();
+        Object.values(W.pend).forEach(p=>p.rej(new Error('Disconnected')));W.pend={};Object.values(T).forEach(t=>t.sub=null);V.sub=null;
+        if(!was){W.err='Could not open '+url.split('?')[0]+' (code '+ev.code+')';W.fails++;jr(W.err,'err');
+          if(!S.authed&&W.fails>=2){S.api=S.api==='new'?'legacy':'new';sess.set('api',S.api);W.fails=0;jr('Trying the '+S.api+' API address instead')}}
+        rej(new Error('Offline'));retry()};
+    });
+  })();
   W.ready.catch(()=>{});
 }
 function send(r){return (W.ready||Promise.reject(new Error('Offline'))).then(()=>new Promise((res,rej)=>{if(!W.ws||W.ws.readyState!==1)return rej(new Error('Offline'));const id=W.rid++;r.req_id=id;W.pend[id]={res,rej};W.ws.send(JSON.stringify(r))}))}
@@ -495,21 +524,31 @@ function onMsg(e){
   switch(d.msg_type){
    case 'tick':if(d.tick)onTick(d.tick);break;
    case 'ohlc':onOhlc(d.ohlc);break;
-   case 'balance':if(d.balance){S.bal=+d.balance.balance;renderAcct()}break;
+   case 'balance':if(d.balance){S.bal=+d.balance.balance;if(d.balance.currency)S.cur=d.balance.currency;renderAcct()}break;
    case 'proposal_open_contract':onContract(d.proposal_open_contract,d.subscription);break;
   }
 }
-async function resume(){try{await W.ready;await loadSymbols();if(S.token)await authorize();for(const s of Object.keys(T))load(s).catch(()=>{});if(cur()==='tv')tvStart()}catch(e){}}
+async function resume(){try{await W.ready;await loadSymbols();await afterOpen();for(const s of Object.keys(T))load(s).catch(()=>{});if(cur()==='tv')tvStart()}catch(e){}}
+async function afterOpen(){
+  if(S.authed){S.auth=true;renderAcct();send({balance:1,subscribe:1}).catch(e=>jr('Balance: '+e.message,'err'));jr('Trading login ok: account '+S.acct+(S.virtual?' (demo)':' (REAL)'),'ok')}
+  else if(S.token&&!S.acct){
+    if(S.api==='new'){jr('Add your Account ID in Connect account to trade on the new API.','err');return}
+    await authorize();
+  }
+}
 async function loadSymbols(){
   try{const r=await send({active_symbols:'brief',product_type:'basic'});
-   const a=r.active_symbols.filter(x=>x.market==='synthetic_index').map(x=>({s:x.symbol,name:x.display_name,grp:x.submarket_display_name||'Synthetic',dec:x.pip?Math.max(0,Math.round(-Math.log10(x.pip))):2}));
-   if(a.length){SYMS=a;fillMk()}}catch(e){}
+   const raw=r.active_symbols||r.symbols||[];
+   const a=raw.filter(x=>!x.market||/synthetic/i.test(x.market)).map(x=>{const s=x.underlying_symbol||x.symbol;return {s,name:x.underlying_symbol_name||x.display_name||x.name||s,grp:x.submarket_display_name||x.submarket_name||x.submarket||'Synthetic',dec:x.pip?Math.max(0,Math.round(-Math.log10(+x.pip))):(x.pip_size!=null?+x.pip_size:2)}}).filter(x=>x.s);
+   if(a.length){SYMS=a;fillMk();jr('Loaded '+a.length+' markets')}else jr('Market list was empty, using the built-in list','err')}
+  catch(e){jr('Market list: '+e.message+' (using built-in list)','err')}
 }
 async function authorize(){
   const a=await send({authorize:S.token});const u=a.authorize;
   S.auth=true;S.cur=u.currency;S.virtual=!!u.is_virtual;S.login=u.loginid;S.bal=+u.balance;renderAcct();
   send({balance:1,subscribe:1}).catch(()=>{});jr('Connected '+u.loginid+' ('+u.currency+(S.virtual?', demo':', REAL')+')','ok');
 }
+const wire=p=>{if(S.api!=='new')return p;const q=Object.assign({},p);q.underlying_symbol=q.symbol;delete q.symbol;return q};
 const AV={};
 function avail(sym){if(!AV[sym])AV[sym]=send({contracts_for:sym,currency:S.cur,product_type:'basic'}).then(r=>new Set(r.contracts_for.available.map(a=>a.contract_type))).catch(()=>{delete AV[sym];return null});return AV[sym]}
 
@@ -534,7 +573,7 @@ async function load(sym){
   try{await job}finally{if(T[sym])T[sym].busy=null}
 }
 function onTick(tk){
-  const t=T[tk.symbol];if(!t||!t.prices)return;
+  const sy=tk.symbol||tk.underlying_symbol;tk.symbol=sy;const t=T[sy];if(!t||!t.prices)return;
   if(tk.pip_size!=null)t.dec=tk.pip_size;
   const p=+tk.quote;t.prices.push(p);t.times.push(+tk.epoch);t.digits.push(lastDigit(p,t.dec));
   while(t.prices.length>(t.max||500)){t.prices.shift();t.times.shift();t.digits.shift()}
@@ -586,7 +625,7 @@ function params(c){
 }
 async function trade(c,tag){
   if(!S.auth)throw new Error('Connect your account first.');
-  const p=params(c),r=await send({buy:1,price:p.amount,parameters:p}),id=r.buy.contract_id;
+  const p=params(c),r=await send({buy:1,price:p.amount,parameters:wire(p)}),id=r.buy.contract_id;
   const rec={id,type:c.type,sym:c.symbol,barrier:c.barrier,stake:p.amount,payout:0,profit:null,time:Date.now(),tag,open:true};
   S.trades.unshift(rec);
   rec.wait=new Promise(res=>{rec.done=res;setTimeout(()=>res(rec),60000)});
@@ -881,7 +920,7 @@ function renderLegs(){
   quoteAll();
 }
 let qT;function quoteAll(){clearTimeout(qT);qT=setTimeout(()=>M.legs&&M.legs.forEach(async(lg,i)=>{const e=$('q'+i);if(!e)return;
-  try{const p=params({symbol:S.sym.man,type:lg.t,barrier:lg.b,dur:+$('m-dur').value,stake:+$('m-stake').value||1});const r=await send({proposal:1,amount:p.amount,basis:'stake',contract_type:p.contract_type,currency:p.currency,duration:p.duration,duration_unit:'t',symbol:p.symbol,...(p.barrier!=null?{barrier:p.barrier}:{})});
+  try{const p=params({symbol:S.sym.man,type:lg.t,barrier:lg.b,dur:+$('m-dur').value,stake:+$('m-stake').value||1});const r=await send(Object.assign({proposal:1},wire(p)));
    const e2=$('q'+i);if(e2)e2.textContent='Payout '+(+r.proposal.payout).toFixed(2)}catch(x){const e2=$('q'+i);if(e2)e2.textContent=x.message.slice(0,40)}}),350)}
 async function manBuy(which){
   const idx=which==='both'?[0,1]:[+which],n=$('m-bulk').checked?Math.max(2,Math.min(20,+$('m-bn').value||2)):1;
@@ -897,14 +936,15 @@ bus.on('tick',s=>{
 
 /* ---------- UI helpers ---------- */
 let toastT;function toast(m,err){const t=$('toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(toastT);toastT=setTimeout(()=>t.className='',4200)}
-function openLogin(){$('l-app').value=S.appId;$('l-tok').value=S.token;$('m-login').hidden=false}
+function openLogin(){$('l-app').value=S.appId;$('l-tok').value=S.token;$('l-acct').value=S.acct||'';$('m-login').hidden=false}
 async function doLogin(){
-  const a=$('l-app').value.trim()||CFG.APP_ID,t=$('l-tok').value.trim();if(!t){toast('Paste your API token first.',1);return}
-  try{
-    if(a!==S.appId){S.appId=a;store.set('appId',a);if(W.ws){W.ws.onclose=null;W.ws.close()}Object.values(T).forEach(x=>x.sub=null);connect();await W.ready;await loadSymbols()}
-    S.token=t;sess.set('tok',t);await authorize();$('m-login').hidden=true;
-    for(const s of Object.keys(T))load(s).catch(()=>{});
-  }catch(e){toast(e.message,1)}
+  const a=$('l-app').value.trim()||CFG.APP_ID,t=$('l-tok').value.trim(),ac=$('l-acct').value.trim();
+  if(!t){toast('Paste your API token first.',1);return}
+  S.appId=a;store.set('appId',a);S.token=t;sess.set('tok',t);S.acct=ac;sess.set('acct',ac);
+  clearTimeout(W.rt);if(W.ws){W.ws.onclose=null;try{W.ws.close()}catch(e){}}
+  Object.values(T).forEach(x=>x.sub=null);V.sub=null;S.auth=false;S.authed=false;W.fails=0;connect();
+  try{await W.ready;await loadSymbols();await afterOpen();if(S.auth){$('m-login').hidden=true;toast('Connected')}else toast('Connected for market data only. '+(S.api==='new'?'Add your Account ID to trade.':'Token not accepted.'),1);for(const s of Object.keys(T))load(s).catch(()=>{})}
+  catch(e){toast(e.message,1)}
 }
 function exportBot(){const c=formToCfg(),b=new Blob([JSON.stringify(c,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=(c.name||'bot').replace(/\W+/g,'_')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
 
@@ -918,7 +958,8 @@ document.addEventListener('click',e=>{
     else if(a==='login')openLogin();
     else if(a==='l-ok')doLogin();
     else if(a==='run'){if(B.run)botStop('Stopped');else botStart(formToCfg(),'builder').then(renderRun)}
-    else if(a==='sum')$('panel').classList.toggle('shut');
+    else if(a==='sum')$('panel').classList.toggle(innerWidth<=900?'open':'shut');
+    else if(a==='open-jr'){S.ptab='jr';$('panel').classList.remove('shut');$('panel').classList.add('open');renderPanel()}
     else if(a==='reset'){S.trades=[];S.journal=[];renderPanel();renderDash()}
     else if(a==='b-import'){e.preventDefault();$('xmlfile').click()}
     else if(a==='b-save')saveBot();
@@ -927,7 +968,7 @@ document.addEventListener('click',e=>{
     else if(a==='a-scan')scan();
     else if(a==='a-go'){if(B.run&&B.label==='auto')botStop('Stopped');else if(A.best)autoStart(A.best)}
     else if(a==='tv-load')tvWidget();
-    else if(a==='open-tx'){S.ptab='tx';$('panel').classList.remove('shut');renderPanel()}
+    else if(a==='open-tx'){S.ptab='tx';$('panel').classList.remove('shut');$('panel').classList.add('open');renderPanel()}
     else if(a==='m-prev'||a==='m-next'){M.g=MG[(MG.indexOf(M.g)+(a==='m-next'?1:3))%4];M.legs=legsFor(M.g);renderLegs()}
     else if(a==='ai-ask')aiAsk();
     return}
@@ -977,8 +1018,7 @@ $('ai-b').innerHTML=[0,1,2,3,4,5,6,7,8].map(i=>`<option value="${i}"${i===4?' se
 $('dg-b').innerHTML=[0,1,2,3,4,5,6,7,8,9].map(i=>`<option${i===4?' selected':''}>${i}</option>`).join('');
 connect();
 fillMk();cfgToForm();renderPanel();renderRun();renderDash();renderAuto();loadBots();
-if(innerWidth<900)$('panel').classList.add('shut');
-W.ready.then(()=>loadSymbols()).then(()=>{if(S.token)return authorize()}).catch(()=>{});
+resume();
 route();
 </script>
 </body>
