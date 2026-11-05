@@ -185,6 +185,40 @@ ul.sig{margin:0;padding-left:18px}ul.sig li{margin:3px 0}
 .tog{display:flex;align-items:center;gap:10px;margin:6px 0 12px;color:var(--tx);font-size:14px}
 .tog input[type=checkbox]{width:auto;margin:0}.tog input[type=number]{width:70px;margin:0}
 
+/* builder workspace */
+.bwrap{display:grid;grid-template-columns:210px 1fr;gap:14px;align-items:start}
+.bside{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;position:sticky;top:0}
+.qs{display:block;width:100%;border:0;border-radius:8px;padding:10px;background:linear-gradient(90deg,var(--pur),var(--pur2));color:#fff;font-weight:700;cursor:pointer;margin-bottom:10px}
+.mh{display:flex;justify-content:space-between;width:100%;background:rgba(255,255,255,.06);border:0;border-radius:8px;padding:9px 10px;color:var(--gold);font-weight:700;cursor:pointer;margin:6px 0 4px}
+.bmenu a{display:block;padding:9px 10px;margin:2px 0;border-bottom:1px solid var(--line);cursor:pointer;font-weight:600}
+.bmenu a:hover{color:var(--gold)}
+.bnote{font-size:12px;color:var(--mu);padding:6px 4px}
+.btool{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.ib{width:38px;height:36px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.07);cursor:pointer;color:var(--gold);font-size:16px}
+.ib:hover{background:rgba(255,255,255,.16)}
+.btool .name{width:200px;margin:0}
+.ws{position:relative;border:1px solid var(--line);border-radius:12px;overflow:auto;padding:22px;min-height:70vh;background:radial-gradient(circle at 1px 1px,rgba(255,255,255,.08) 1px,transparent 0) 0 0/22px 22px,rgba(4,8,30,.55)}
+.wsin{display:grid;grid-template-columns:minmax(320px,540px) minmax(260px,400px);gap:34px;align-items:start}
+.bk{position:relative;filter:drop-shadow(0 6px 10px rgba(0,0,0,.4))}
+.bk.drag{z-index:5;filter:drop-shadow(0 12px 18px rgba(0,0,0,.6))}
+.bk.flash .bhead{animation:fl 1s}
+@keyframes fl{50%{background:#ffb340}}
+.bhead{background:#14a3b3;color:#fff;padding:8px 12px;font-weight:700;border-radius:8px 8px 0 0;display:flex;gap:8px;align-items:center;user-select:none}
+.bhead[data-drag]{cursor:grab;touch-action:none}
+.bhead.blue{background:#3d6fdc}.bhead.grey{background:#6b7390}
+.bpanel{background:#fff;color:#222;padding:10px 12px;border-left:6px solid #14a3b3}
+.bpanel.blue{border-color:#3d6fdc}.bpanel.grey{border-color:#6b7390}
+.bsub{background:#14a3b3;color:#fff;font-weight:700;font-size:12.5px;padding:5px 12px}
+.bvars{background:#f2fbfc;color:#222;padding:8px 12px;border-left:6px solid #14a3b3}
+.bk>*:last-child{border-radius:0 0 8px 8px}
+.brow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0;font-size:12.5px;color:#444}
+.brow .l{min-width:96px;color:#7b7b90}.brow .h{color:#8a8a9c;font-size:11.5px}
+.pill2{display:inline-block;width:auto;margin:0;background:#1f1a2e;color:#fff;border:0;border-radius:18px;padding:5px 12px;font-weight:700;font-size:12px}
+select.pill2{appearance:none;-webkit-appearance:none;padding-right:26px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23fff'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;cursor:pointer}
+select.pill2 option{background:#1f1a2e;color:#fff}
+.pill2.st{background:#3a3350}
+input.bubble{display:inline-block;width:64px;margin:0;height:30px;border-radius:16px;background:#1f1a2e;color:#fff;text-align:center;border:0;font-weight:700;padding:0 6px}
+.bnote2{font-size:12px;color:#6b6b80;margin:6px 0}.bwarn{color:#c2410c}
 /* modal + toast */
 .modal{position:fixed;inset:0;background:rgba(0,0,10,.65);display:grid;place-items:center;z-index:50;padding:16px}
 .mbox{background:#121a48;border:1px solid var(--line);border-radius:14px;padding:20px;max-width:460px;width:100%}
@@ -206,6 +240,7 @@ ul.sig{margin:0;padding-left:18px}ul.sig li{margin:3px 0}
  .mhead{left:8px;right:8px;justify-content:space-between;gap:6px;padding:4px 8px}
  .mhead select{max-width:55%}
 }
+@media(max-width:900px){.bwrap{grid-template-columns:1fr}.bside{position:static}.wsin{grid-template-columns:1fr}.btool .name{width:100%}}
 </style>
 </head>
 <body>
@@ -252,37 +287,88 @@ ul.sig{margin:0;padding-left:18px}ul.sig li{margin:3px 0}
 
 <!-- BOT BUILDER -->
 <section class="page" id="p-builder">
-  <div class="bar">
-    <input id="b-name" class="name" placeholder="Bot name">
-    <button class="ic" data-act="b-import">📂 Import XML</button>
-    <button class="ic" data-act="b-save">💾 Save bot</button>
-    <button class="ic" data-act="b-export">⬇ Export</button>
-    <button class="ic" data-act="b-reset">↺ Reset</button>
-    <a class="ic" href="https://bot.deriv.com" target="_blank" rel="noopener">Official Deriv Bot ↗</a>
-    <span class="note" id="b-px"></span>
+<div class="bwrap">
+ <div class="bside">
+  <button class="qs" data-act="b-quick">Quick strategy</button>
+  <button class="mh" data-tog="bm-list">Blocks menu <span>⌃</span></button>
+  <div class="bmenu" id="bm-list">
+   <a data-goto="bk-trade">Trade parameters</a>
+   <a data-goto="bk-buy">Purchase conditions</a>
+   <a data-goto="bk-sell">Sell conditions (optional)</a>
+   <a data-goto="bk-restart">Restart trading conditions</a>
   </div>
-  <div class="bgrid">
-    <div class="blk teal"><h4>1. Trade parameters</h4><div class="in">
-      <label>Market<select class="mk" data-k="bld"></select></label>
-      <label>Trade type<select id="b-type"></select></label>
-      <div class="row"><label>Digit / barrier<select id="b-bar"></select></label><label>Duration (ticks)<input id="b-dur" type="number" min="1" max="10"></label></div>
-      <p class="note" id="b-av"></p>
-    </div></div>
-    <div class="blk orange"><h4>2. Run once at start</h4><div class="in">
-      <div class="row"><label>INITIAL_STAKE<input id="b-stake" type="number" min="0.35" step="0.01"></label><label>MARTINGALE (1 = off)<input id="b-mart" type="number" min="1" step="0.1"></label></div>
-      <div class="row"><label>TAKE_PROFIT (0 = off)<input id="b-tp" type="number" min="0" step="0.01"></label><label>STOP_LOSS (0 = off)<input id="b-sl" type="number" min="0" step="0.01"></label></div>
-      <div class="row"><label>MAX_TRADES (0 = no limit)<input id="b-max" type="number" min="0"></label><label>Trades per entry<input id="b-bulk" type="number" min="1" max="10"></label></div>
-    </div></div>
-    <div class="blk blue"><h4>3. Purchase conditions</h4><div class="in">
-      <label>Enter when<select id="b-entry"><option value="now">Every tick (as soon as the last trade ends)</option><option value="digit">Last digit(s) match a rule</option></select></label>
-      <div class="row" id="b-erule"><label>Last digit is<select id="b-eop"><option value="lt">below</option><option value="gt">above</option><option value="eq">equal to</option><option value="ne">not equal to</option><option value="even">even</option><option value="odd">odd</option></select></label>
-      <label>Digit<input id="b-eval" type="number" min="0" max="9"></label><label>For N ticks in a row<input id="b-ecount" type="number" min="1" max="10"></label></div>
-    </div></div>
-    <div class="blk pink"><h4>4. Restart trading conditions</h4><div class="in">
-      <p class="note">After a <b>loss</b>, the next stake is multiplied by MARTINGALE. After a <b>win</b>, the stake goes back to INITIAL_STAKE. The bot stops on TAKE_PROFIT, STOP_LOSS, MAX_TRADES, or if the next stake is above your balance.</p>
-      <p class="note">Martingale grows stakes fast: ×2 after 6 losses is 64× your first stake. Test on a demo account first.</p>
-    </div></div>
+  <button class="mh" data-tog="bm-an">Analysis <span>⌄</span></button>
+  <div id="bm-an" class="bnote" hidden>Loading…</div>
+  <button class="mh" data-tog="bm-ut">Utility <span>⌄</span></button>
+  <div id="bm-ut" hidden class="bmenu">
+   <a data-act="b-import">Import XML</a><a data-act="b-export">Download XML</a><a data-act="b-save">Save to My bots</a><a data-act="b-reset">Reset workspace</a>
   </div>
+ </div>
+ <div class="bmain">
+  <div class="btool">
+   <button class="ib" data-act="b-reset" title="Reset workspace">↻</button>
+   <button class="ib" data-act="b-import" title="Import XML">📂</button>
+   <button class="ib" data-act="b-save" title="Save to My bots">💾</button>
+   <button class="ib" data-act="b-export" title="Download XML file">⬇</button>
+   <button class="ib" data-act="b-tidy" title="Tidy blocks">⇅</button>
+   <button class="ib" data-act="b-chart" title="Live chart">📈</button>
+   <button class="ib" data-act="b-undo" title="Undo">↶</button>
+   <button class="ib" data-act="b-redo" title="Redo">↷</button>
+   <button class="ib" data-zoom="1.15" title="Zoom in">＋</button>
+   <button class="ib" data-zoom="0.87" title="Zoom out">－</button>
+   <input id="b-name" class="name" placeholder="Bot name">
+   <span class="note" id="b-px"></span>
+  </div>
+  <div class="ws"><div class="wsin" id="wsin">
+   <div>
+    <div class="bk" id="bk-trade">
+     <div class="bhead" data-drag>▤ 1. Trade parameters</div>
+     <div class="bpanel">
+      <div class="brow"><span class="l">Market:</span><span class="pill2 st">Derived</span><span class="pill2 st" id="b-grp">Continuous Indices</span><select class="mk pill2" data-k="bld"></select></div>
+      <div class="brow"><span class="l">Trade type:</span><select id="b-cat" class="pill2"><option value="dg">Digits</option><option value="ud">Up/Down</option></select><select id="b-tt" class="pill2"></select></div>
+      <div class="brow"><span class="l">Contract type:</span><select id="b-side" class="pill2"></select></div>
+      <p class="bnote2 bwarn" id="b-av"></p>
+     </div>
+     <div class="bsub">Run once at start:</div>
+     <div class="bvars">
+      <div class="brow"><span class="pill2 st">INITIAL_STAKE</span><input id="b-stake" class="bubble" type="number" min="0.35" step="0.01"><span class="h">first stake</span></div>
+      <div class="brow"><span class="pill2 st">TAKE_PROFIT</span><input id="b-tp" class="bubble" type="number" min="0" step="0.01"><span class="h">0 = off</span></div>
+      <div class="brow"><span class="pill2 st">STOP_LOSS</span><input id="b-sl" class="bubble" type="number" min="0" step="0.01"><span class="h">0 = off</span></div>
+      <div class="brow"><span class="pill2 st">MARTINGALE</span><input id="b-mart" class="bubble" type="number" min="1" step="0.1"><span class="h">1 = off</span></div>
+      <div class="brow"><span class="pill2 st">MAX_TRADES</span><input id="b-max" class="bubble" type="number" min="0"><span class="h">0 = no limit</span></div>
+      <div class="brow"><span class="pill2 st">TRADES_PER_ENTRY</span><input id="b-bulk" class="bubble" type="number" min="1" max="10"></div>
+     </div>
+     <div class="bsub">Trade options:</div>
+     <div class="bvars">
+      <div class="brow"><span class="pill2 st">Ticks</span><input id="b-dur" class="bubble" type="number" min="1" max="10"><span id="b-barwrap" class="brow" style="margin:0"><span class="l" style="min-width:0">Digit</span><select id="b-bar" class="pill2"></select></span></div>
+      <div class="brow"><span class="h">Stake = INITIAL_STAKE (grows after a loss when MARTINGALE is above 1)</span></div>
+     </div>
+    </div>
+    <div class="bk" id="bk-buy" style="margin-top:22px">
+     <div class="bhead blue" data-drag>▤ 2. Purchase conditions</div>
+     <div class="bpanel blue">
+      <div class="brow"><span class="l">Enter when:</span><select id="b-entry" class="pill2"><option value="now">Every tick</option><option value="digit">Last digits match a rule</option></select></div>
+      <div class="brow" id="b-erule"><span class="l">Last digit is</span><select id="b-eop" class="pill2"><option value="lt">below</option><option value="gt">above</option><option value="eq">equal to</option><option value="ne">not equal to</option><option value="even">even</option><option value="odd">odd</option></select><input id="b-eval" class="bubble" type="number" min="0" max="9"><span class="l" style="min-width:0">for</span><input id="b-ecount" class="bubble" type="number" min="1" max="10"><span class="h">ticks in a row</span></div>
+     </div>
+    </div>
+   </div>
+   <div>
+    <div class="bk" id="bk-restart">
+     <div class="bhead" data-tog="bk-restart-b" style="cursor:pointer">⚑ 4. Restart trading conditions ▾</div>
+     <div class="bpanel" id="bk-restart-b" hidden>
+      <p class="bnote2">After a <b>loss</b>, the next stake is multiplied by MARTINGALE. After a <b>win</b>, it goes back to INITIAL_STAKE. The bot stops on TAKE_PROFIT, STOP_LOSS, MAX_TRADES, or when the next stake is above your balance.</p>
+      <p class="bnote2 bwarn">Martingale grows stakes fast: ×2 after 6 losses is 64× the first stake. Test on a demo account first.</p>
+     </div>
+    </div>
+    <div class="bk" id="bk-sell" style="margin-top:22px">
+     <div class="bhead grey" data-drag>▤ 3. Sell conditions (optional)</div>
+     <div class="bpanel grey"><p class="bnote2">Contracts run to expiry. Early selling is not supported by this site's bot engine yet.</p></div>
+    </div>
+   </div>
+  </div></div>
+  <div class="cwrap" id="b-chart" hidden style="height:240px;margin-top:12px"></div>
+ </div>
+</div>
 </section>
 
 <!-- AI ANALYSIS -->
@@ -407,6 +493,7 @@ ul.sig{margin:0;padding-left:18px}ul.sig li{margin:3px 0}
   <p class="note">Use a <b>demo</b> account first. The token stays in this browser tab only and is never stored in the site code. Market data and analysis work without logging in.</p>
   <button class="btn" data-act="l-ok">Connect</button> <button class="btn ghost" data-act="close">Cancel</button>
 </div></div>
+<div class="modal" id="m-quick" hidden><div class="mbox"><h3>Quick strategy</h3><p class="note">Pick a ready-made setup. It loads into the builder and you can change anything before pressing Run.</p><div id="q-list" style="max-height:50vh;overflow:auto"></div><button class="btn ghost" data-act="close" style="margin-top:8px">Close</button></div></div>
 <div class="modal" id="m-risk" hidden><div class="mbox">
   <h3>Risk disclaimer</h3>
   <p class="note">Trading synthetic indices and digit contracts carries a high level of risk and you can lose all of your stake. Past results do not predict future results. Auto-trading and martingale staking can multiply losses quickly. Only trade money you can afford to lose, and test every strategy on a demo account first. Nothing on this site is financial advice.</p>
@@ -467,14 +554,18 @@ const TYPES=[
 const TYPE=k=>TYPES.find(t=>t.k===k)||TYPES[0];
 const GROUPS={ou:'Over/Under',eo:'Even/Odd',md:'Matches/Differs',rf:'Rise/Fall'};
 const hasBar=k=>TYPE(k).lo!=null;
+const GSIDES={ou:[['DIGITOVER','Over'],['DIGITUNDER','Under']],eo:[['DIGITEVEN','Even'],['DIGITODD','Odd']],md:[['DIGITMATCH','Matches'],['DIGITDIFF','Differs']],rf:[['CALL','Rise'],['PUT','Fall']]};
+const CATG={dg:['ou','eo','md'],ud:['rf']};
+const PAIR={DIGITOVER:'DIGITUNDER',DIGITUNDER:'DIGITOVER',DIGITEVEN:'DIGITODD',DIGITODD:'DIGITEVEN',DIGITMATCH:'DIGITDIFF',DIGITDIFF:'DIGITMATCH',CALL:'PUT',PUT:'CALL'};
 function typeOpts(){return Object.keys(GROUPS).map(g=>`<optgroup label="${GROUPS[g]}">`+TYPES.filter(t=>t.g===g).map(t=>`<option value="${t.k}">${t.n}</option>`).join('')+'</optgroup>').join('')}
-function barOpts(sel,type,val){const t=TYPE(type);sel.disabled=!hasBar(type);if(!hasBar(type)){sel.innerHTML='<option>—</option>';return}
- let h='';for(let i=t.lo;i<=t.hi;i++)h+=`<option>${i}</option>`;sel.innerHTML=h;sel.value=String(Math.min(t.hi,Math.max(t.lo,val==null?t.lo:+val)))}
+function barOpts(sel,type,val,both){const t=TYPE(type);sel.disabled=!hasBar(type);if(!hasBar(type)){sel.innerHTML='<option>—</option>';return}
+ let lo=t.lo,hi=t.hi;if(both&&t.g==='ou'){lo=1;hi=8}
+ let h='';for(let i=lo;i<=hi;i++)h+=`<option>${i}</option>`;sel.innerHTML=h;sel.value=String(Math.min(hi,Math.max(lo,val==null?lo:+val)))}
 
 /* ---------- state ---------- */
 const S={appId:store.get('appId',CFG.APP_ID),token:sess.get('tok'),auth:false,cur:'USD',virtual:true,bal:null,login:'',
  trades:[],journal:[],sym:{ai:'R_100',dg:'R_100',man:'R_100',tv:'R_100'},ptab:'sum'};
-const DEF={name:'My bot',symbol:'R_100',type:'DIGITOVER',barrier:2,dur:1,bulk:1,stake:1,mart:1,tp:5,sl:10,max:0,entry:'now',eop:'lt',eval:3,ecount:2};
+const DEF={name:'My bot',symbol:'R_100',type:'DIGITOVER',both:false,barrier:2,dur:1,bulk:1,stake:1,mart:1,tp:5,sl:10,max:0,entry:'now',eop:'lt',eval:3,ecount:2};
 let CF=Object.assign({},DEF,store.get('cfg',{}));
 const W={ws:null,rid:1,pend:{},ready:null};
 
@@ -668,10 +759,10 @@ async function botTick(){
   if(!B.run||B.busy)return;const c=B.cfg;if(!T[c.symbol]||!entryOK(c))return;
   B.busy=true;
   try{
-    if(S.bal!=null&&B.stake*Math.max(1,c.bulk)>S.bal)return botStop('Next stake is above your balance.',1);
-    const n=Math.max(1,Math.min(10,+c.bulk||1)),res=await Promise.all(Array.from({length:n},()=>trade(Object.assign({},c,{stake:B.stake}),'bot')));
+    if(S.bal!=null&&B.stake*Math.max(1,c.bulk)*(c.both?2:1)>S.bal)return botStop('Next stake is above your balance.',1);
+    const n=Math.max(1,Math.min(10,+c.bulk||1)),types=c.both?[c.type,PAIR[c.type]]:[c.type],res=await Promise.all(types.flatMap(ty=>Array.from({length:n},()=>trade(Object.assign({},c,{type:ty,stake:B.stake}),'bot'))));
     const ok=res.filter(r=>r&&r.profit!=null);if(!ok.length)return botStop('A contract did not settle in time.',1);
-    const pl=ok.reduce((a,r)=>a+r.profit,0);B.pl+=pl;B.count+=ok.length;B.stake=pl<0?r2(B.stake*c.mart):c.stake;
+    const pl=ok.reduce((a,r)=>a+r.profit,0);B.pl+=pl;B.count+=n;B.stake=pl<0?r2(B.stake*c.mart):c.stake;
     if(!B.run)return;
     if(+c.tp>0&&B.pl>=+c.tp)botStop('Take profit reached (+'+B.pl.toFixed(2)+')');
     else if(+c.sl>0&&B.pl<=-c.sl)botStop('Stop loss reached ('+B.pl.toFixed(2)+')',1);
@@ -686,7 +777,10 @@ function parseXML(txt){
   const doc=new DOMParser().parseFromString(txt,'text/xml');if(doc.querySelector('parsererror'))throw new Error('That file is not valid XML.');
   const f=n=>{const e=doc.querySelector('field[name="'+n+'"]');return e?e.textContent.trim():null},cfg={},got=[];
   const sym=f('SYMBOL_LIST');if(sym){cfg.symbol=sym;got.push('market')}
-  const pur=f('PURCHASE_LIST');if(pur&&TYPES.some(t=>t.k===pur)){cfg.type=pur;got.push('trade type')}
+  const purs=qsa('field[name="PURCHASE_LIST"]',doc).map(e=>e.textContent.trim()).filter(x=>TYPES.some(t=>t.k===x));
+  if(purs.length){cfg.type=purs[0];got.push('trade type');if(purs.some(x=>x===PAIR[purs[0]])){cfg.both=true;got.push('both sides')}}
+  else{const tl=f('TYPE_LIST');if(tl&&TYPES.some(t=>t.k===tl)){cfg.type=tl;got.push('trade type')}
+    else if(tl==='both'){const gm={overunder:'DIGITOVER',evenodd:'DIGITEVEN',matchesdiffers:'DIGITMATCH',risefall:'CALL'}[f('TRADETYPE_LIST')];if(gm){cfg.type=gm;cfg.both=true;got.push('trade type','both sides')}}}
   const num=sel=>{const e=doc.querySelector(sel+' field[name="NUM"]');return e?+e.textContent:null};
   const du=num('value[name="DURATION"]');if(du){cfg.dur=du;got.push('duration')}
   const pr=num('value[name="PREDICTION"]');if(pr!=null){cfg.barrier=pr;got.push('digit')}
@@ -699,12 +793,16 @@ function parseXML(txt){
     else if(/martingale|multipl|^mart/.test(name)){cfg.mart=val;got.push('martingale')}
     else if(/stake|amount/.test(name)){cfg.stake=val;got.push('stake')}
   });
-  return {cfg,got};
+  const st=doc.querySelector('settings');if(st){try{Object.assign(cfg,JSON.parse(st.textContent));got.push('all saved settings')}catch(e){}}
+  const logic=qsa('block',doc).filter(b=>/^(controls_|logic_|procedures_|tick_analysis|read_|sell_|check_|contract_|trade_again|notify|ticks|candle|ohlc|sma|ema|rsi|bb|macd|text_join|lists_)/.test(b.getAttribute('type')||'')).length;
+  return {cfg,got,logic};
 }
 async function importXML(txt,name){
-  const {cfg,got}=parseXML(txt);cfg.name=(name||'Imported bot').replace(/\.xml$/i,'');
-  CF=Object.assign({},DEF,cfg);cfgToForm();go('builder');
-  toast(got.length?'Imported: '+[...new Set(got)].join(', ')+'. Please review the values, then press Run.':'XML loaded but no known settings were found. Set the values by hand.',!got.length);
+  const {cfg,got,logic}=parseXML(txt);cfg.name=cfg.name||(name||'Imported bot').replace(/\.xml$/i,'');
+  pushHist();CF=Object.assign({},DEF,cfg);store.set('cfg',CF);cfgToForm();go('builder');
+  let m=got.length?'Imported: '+[...new Set(got)].join(', ')+'. Please review the values.':'XML loaded but no known settings were found. Set the values by hand.';
+  if(logic>0)m+=' This file also has '+logic+' logic blocks (conditions, loops, indicators). This site runs the settings above, not custom block logic.';
+  toast(m,!got.length||logic>0);
 }
 
 /* ---------- bots list ---------- */
@@ -728,19 +826,40 @@ async function loadBot(i){
 }
 
 /* ---------- builder form ---------- */
+function fillTT(cat,g){$('b-cat').value=cat;$('b-tt').innerHTML=CATG[cat].map(x=>`<option value="${x}">${GROUPS[x]}</option>`).join('');$('b-tt').value=g}
+function fillSide(g,val){$('b-side').innerHTML=GSIDES[g].map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('')+'<option value="both">Both</option>';$('b-side').value=val}
+function refreshBar(){const g=$('b-tt').value,sv=$('b-side').value,both=sv==='both',type=both?GSIDES[g][0][0]:sv;barOpts($('b-bar'),type,+$('b-bar').value||CF.barrier,both);$('b-barwrap').style.opacity=hasBar(type)?1:.4}
 function cfgToForm(){
-  const c=CF;$('b-name').value=c.name||'';fillMk();$('b-type').innerHTML=typeOpts();$('b-type').value=c.type;barOpts($('b-bar'),c.type,c.barrier);
+  const c=CF,g=TYPE(c.type).g;$('b-name').value=c.name||'';fillMk();
+  fillTT(g==='rf'?'ud':'dg',g);fillSide(g,c.both?'both':c.type);barOpts($('b-bar'),c.type,c.barrier,c.both);
   ['dur','bulk','stake','mart','tp','sl','max','eval','ecount'].forEach(k=>$('b-'+k).value=c[k]);
   $('b-entry').value=c.entry;$('b-eop').value=c.eop;$('b-erule').style.display=c.entry==='digit'?'':'none';
-  qs('.mk[data-k="bld"]').value=c.symbol;$('b-bar').parentNode.style.opacity=hasBar(c.type)?1:.5;checkAvail('b-av',c.symbol,c.type);
+  qs('.mk[data-k="bld"]').value=c.symbol;$('b-grp').textContent=symOf(c.symbol).grp||'Synthetic Indices';
+  $('b-barwrap').style.opacity=hasBar(c.type)?1:.4;checkAvail('b-av',c.symbol,c.type);
   if(cur()==='builder')ENTER.builder();
 }
 function formToCfg(){
-  const t=$('b-type').value,c=CF;c.name=$('b-name').value.trim()||'My bot';c.symbol=qs('.mk[data-k="bld"]').value;c.type=t;c.barrier=hasBar(t)?+$('b-bar').value:0;
+  const g=$('b-tt').value,sv=$('b-side').value,c=CF;c.both=sv==='both';c.type=c.both?GSIDES[g][0][0]:sv;
+  c.name=$('b-name').value.trim()||'My bot';c.symbol=qs('.mk[data-k="bld"]').value;c.barrier=hasBar(c.type)?+$('b-bar').value:0;
   ['dur','bulk','stake','mart','tp','sl','max','eval','ecount'].forEach(k=>c[k]=+$('b-'+k).value||0);
   c.dur=c.dur||1;c.bulk=Math.max(1,Math.min(10,c.bulk||1));c.mart=Math.max(1,c.mart||1);c.entry=$('b-entry').value;c.eop=$('b-eop').value;
   store.set('cfg',c);return c;
 }
+const H={u:[],r:[]};
+const pushHist=()=>{H.u.push(JSON.stringify(CF));if(H.u.length>50)H.u.shift();H.r=[]};
+function undo(){if(!H.u.length){toast('Nothing to undo');return}H.r.push(JSON.stringify(CF));CF=Object.assign({},DEF,JSON.parse(H.u.pop()));store.set('cfg',CF);cfgToForm()}
+function redo(){if(!H.r.length){toast('Nothing to redo');return}H.u.push(JSON.stringify(CF));CF=Object.assign({},DEF,JSON.parse(H.r.pop()));store.set('cfg',CF);cfgToForm()}
+let ZOOM=1;
+function zoomWs(f){ZOOM=Math.max(.6,Math.min(1.5,ZOOM*f));$('wsin').style.zoom=ZOOM}
+function applyPos(){const pos=store.get('bkpos',{});qsa('.bk').forEach(b=>{const p=pos[b.id]||[0,0];b.style.transform=p[0]||p[1]?`translate(${p[0]}px,${p[1]}px)`:''})}
+let DRG=null;
+document.addEventListener('pointerdown',e=>{const h=e.target.closest('[data-drag]');if(!h||e.target.closest('button,input,select'))return;const bk=h.closest('.bk'),p=store.get('bkpos',{})[bk.id]||[0,0];DRG={bk,x:e.clientX,y:e.clientY,o:p.slice()};bk.classList.add('drag');e.preventDefault()});
+document.addEventListener('pointermove',e=>{if(!DRG)return;const dx=DRG.o[0]+(e.clientX-DRG.x)/ZOOM,dy=DRG.o[1]+(e.clientY-DRG.y)/ZOOM;DRG.cur=[dx,dy];DRG.bk.style.transform=`translate(${dx}px,${dy}px)`});
+document.addEventListener('pointerup',()=>{if(!DRG)return;DRG.bk.classList.remove('drag');if(DRG.cur){const p=store.get('bkpos',{});p[DRG.bk.id]=DRG.cur;store.set('bkpos',p)}DRG=null});
+function gotoBlock(id){const e=$(id);if(!e)return;e.scrollIntoView({behavior:'smooth',block:'center'});e.classList.add('flash');setTimeout(()=>e.classList.remove('flash'),1100)}
+let BC=null;
+function toggleChart(){const w=$('b-chart');w.hidden=!w.hidden;if(!w.hidden){if(!BC)BC=new Chart(w,'area');BC.sym=null;renderBuilderPx()}}
+function openQuick(){$('q-list').innerHTML=BOTS.map((b,i)=>`<button class="btn ghost block" style="margin-bottom:6px;text-align:left" data-load="${i}">${esc(b.name)} <span class="note">· ${esc(b.tag||'')}</span></button>`).join('');$('m-quick').hidden=false}
 async function checkAvail(id,sym,type){
   const av=await avail(sym),e=$(id);if(!e)return;
   e.textContent=av&&!av.has(type)?'⚠ '+TYPE(type).n+' is not offered on '+nm(sym)+'. Pick another trade type or market.':'';
@@ -772,7 +891,7 @@ function route(){
 const ENTER={
   dashboard(){unwatch('page');renderDash()},
   bots(){unwatch('page');renderBots()},
-  builder(){watch('page',CF.symbol,60).then(renderBuilderPx).catch(()=>{})},
+  builder(){watch('page',CF.symbol,200).then(renderBuilderPx).catch(()=>{})},
   ai(){watch('page',S.sym.ai,+$('ai-n').value).then(renderAI).catch(e=>toast(e.message,1))},
   digits(){watch('page',S.sym.dg,+$('dg-n').value).then(renderDG).catch(e=>toast(e.message,1))},
   auto(){unwatch('page');renderAuto()},
@@ -805,7 +924,14 @@ function jr(m,c){S.journal.unshift({m,c,t:new Date().toLocaleTimeString()});if(S
 function renderRun(){
   const b=$('runb');b.className='run'+(B.run?' stop':'');b.textContent=B.run?'■ Stop':'▶ Run';renderPanel();
 }
-function renderBuilderPx(){const t=T[CF.symbol];$('b-px').textContent=t&&t.prices.length?nm(CF.symbol)+': '+t.prices[t.prices.length-1].toFixed(t.dec)+' · last digit '+t.digits[t.digits.length-1]:''}
+function renderBuilderPx(){
+  const t=T[CF.symbol];if(!t||!t.prices.length)return;
+  const p=t.prices[t.prices.length-1],d=t.digits[t.digits.length-1];
+  $('b-px').textContent=nm(CF.symbol)+': '+p.toFixed(t.dec)+' · last digit '+d;
+  const st=dstats(t.digits.slice(-100)),mx=Math.max(...st.p),mn=Math.min(...st.p),b=CF.barrier||0;
+  $('bm-an').innerHTML=`Last 100 ticks<br>Hottest digit: <b>${st.p.indexOf(mx)}</b> (${mx.toFixed(0)}%)<br>Coldest digit: <b>${st.p.indexOf(mn)}</b> (${mn.toFixed(0)}%)<br>Over ${b}: ${t.digits.slice(-100).filter(x=>x>b).length}% · Under ${b}: ${t.digits.slice(-100).filter(x=>x<b).length}%`;
+  if(BC&&!$('b-chart').hidden){if(BC.sym!==CF.symbol||!BC.d.length){BC.sym=CF.symbol;BC.dec=t.dec;BC.set(t.prices.map((v,i)=>({t:t.times[i],v})))}else BC.push({t:t.times[t.times.length-1],v:p})}
+}
 
 /* AI analysis */
 function dstats(d){const c=Array(10).fill(0);d.forEach(x=>c[x]++);return {c,p:c.map(v=>d.length?v/d.length*100:0)}}
@@ -942,7 +1068,7 @@ bus.on('tick',s=>{
 });
 
 /* ---------- UI helpers ---------- */
-let toastT;function toast(m,err){const t=$('toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(toastT);toastT=setTimeout(()=>t.className='',4200)}
+let toastT;function toast(m,err){const t=$('toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(toastT);toastT=setTimeout(()=>t.className='',Math.max(4200,Math.min(11000,m.length*55)))}
 function openLogin(){$('l-app').value=S.appId;$('l-tok').value=S.token;$('l-acct').value=S.acct||'';$('m-login').hidden=false}
 async function doLogin(){
   const a=$('l-app').value.trim()||CFG.APP_ID,t=$('l-tok').value.trim(),ac=$('l-acct').value.trim();
@@ -965,11 +1091,20 @@ async function findAccounts(){
     box.innerHTML=found.length?'Tap your account:<br>'+found.map(f=>`<button class="mini" type="button" data-acct="${esc(f.id)}" style="margin:4px 4px 0 0">${esc(f.id)}${f.type?' · '+esc(f.type):''}${f.cur?' · '+esc(f.cur):''}${f.bal!=null?' · '+esc(f.bal):''}</button>`).join(''):'No account IDs recognised. Raw reply: '+esc(txt.slice(0,300));
   }catch(e){box.textContent='Could not list accounts: '+e.message}
 }
-function exportBot(){const c=formToCfg(),b=new Blob([JSON.stringify(c,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=(c.name||'bot').replace(/\W+/g,'_')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+function botXML(c){
+  const num=(n,v)=>`  <value name="${n}"><shadow type="math_number"><field name="NUM">${+v}</field></shadow></value>\n`;
+  const vs=(n,v)=>`  <block type="variables_set"><field name="VAR">${n}</field><value name="VALUE"><block type="math_number"><field name="NUM">${+v}</field></block></value></block>\n`;
+  return '<xml xmlns="https://developers.google.com/blockly/xml" data-app="techrefined" version="1">\n'+
+   `  <field name="SYMBOL_LIST">${esc(c.symbol)}</field>\n  <field name="PURCHASE_LIST">${esc(c.type)}</field>\n`+(c.both?`  <field name="PURCHASE_LIST">${esc(PAIR[c.type])}</field>\n`:'')+
+   num('DURATION',c.dur)+(hasBar(c.type)?num('PREDICTION',c.barrier):'')+num('AMOUNT',c.stake)+
+   vs('INITIAL_STAKE',c.stake)+vs('TAKE_PROFIT',c.tp)+vs('STOP_LOSS',c.sl)+vs('MARTINGALE',c.mart)+
+   `  <settings>${esc(JSON.stringify(c))}</settings>\n</xml>\n`;
+}
+function exportBot(){const c=formToCfg(),b=new Blob([botXML(c)],{type:'text/xml'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=(c.name||'bot').replace(/\W+/g,'_')+'.xml';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast('Downloaded '+a.download+'. Re-import it here any time.')}
 
 /* ---------- events ---------- */
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-act],[data-load],[data-my],[data-del],[data-use],[data-f],[data-m],[data-r],[data-md],[data-st],[data-buy],[data-p],[data-filter],[data-scan],[data-acct]');if(!t)return;
+  const t=e.target.closest('[data-act],[data-load],[data-my],[data-del],[data-use],[data-f],[data-m],[data-r],[data-md],[data-st],[data-buy],[data-p],[data-filter],[data-scan],[data-acct],[data-zoom],[data-goto],[data-tog]');if(!t)return;
   const d=t.dataset;
   if(d.act){const a=d.act;
     if(a==='risk')$('m-risk').hidden=false;
@@ -983,7 +1118,12 @@ document.addEventListener('click',e=>{
     else if(a==='b-import'){e.preventDefault();$('xmlfile').click()}
     else if(a==='b-save')saveBot();
     else if(a==='b-export')exportBot();
-    else if(a==='b-reset'){CF=Object.assign({},DEF);store.set('cfg',CF);cfgToForm()}
+    else if(a==='b-reset'){pushHist();CF=Object.assign({},DEF);store.set('cfg',CF);cfgToForm()}
+    else if(a==='b-tidy'){store.set('bkpos',{});applyPos()}
+    else if(a==='b-chart')toggleChart();
+    else if(a==='b-undo')undo();
+    else if(a==='b-redo')redo();
+    else if(a==='b-quick')openQuick();
     else if(a==='a-scan')scan();
     else if(a==='a-go'){if(B.run&&B.label==='auto')botStop('Stopped');else if(A.best)autoStart(A.best)}
     else if(a==='tv-load')tvWidget();
@@ -993,7 +1133,10 @@ document.addEventListener('click',e=>{
     else if(a==='ai-ask')aiAsk();
     return}
   if(d.acct){$('l-acct').value=d.acct;$('l-accts').textContent='Selected '+d.acct;return}
-  if(d.load!=null)loadBot(+d.load);
+  if(d.goto){gotoBlock(d.goto);return}
+  if(d.zoom){zoomWs(+d.zoom);return}
+  if(d.tog){const e=$(d.tog);if(e)e.hidden=!e.hidden;return}
+  if(d.load!=null){qsa('.modal').forEach(m=>m.hidden=true);loadBot(+d.load)}
   else if(d.my){const b=myBots().find(x=>x.id==d.my);if(b){CF=Object.assign({},DEF,b.cfg);cfgToForm();go('builder')}}
   else if(d.del){store.set('myBots',myBots().filter(x=>x.id!=d.del));renderDash()}
   else if(d.use!=null){const f=A.found[+d.use];if(f){A.best=f;renderAuto();$('a-msg').textContent='Selected: '+f.name+' · '+f.label}}
@@ -1011,7 +1154,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.classList.contains('mk')){const k=t.dataset.k;
-    if(k==='bld'){CF.symbol=t.value;store.set('cfg',CF);checkAvail('b-av',CF.symbol,CF.type);ENTER.builder()}
+    if(k==='bld'){pushHist();CF.symbol=t.value;store.set('cfg',CF);$('b-grp').textContent=symOf(CF.symbol).grp||'Synthetic Indices';checkAvail('b-av',CF.symbol,CF.type);ENTER.builder()}
     else{S.sym[k]=t.value;({ai:ENTER.ai,dg:ENTER.digits,man:manStart,tv:tvStart})[k]()}return}
   if(t.id==='ai-n')ENTER.ai();
   if(t.id==='ai-b')renderAI();
@@ -1019,10 +1162,12 @@ document.addEventListener('change',e=>{
   if(t.id==='dg-b')renderDG();
   if(t.id==='tv-g')tvStart();
   if(t.id==='m-dur'||t.id==='m-stake')quoteAll();
-  if(t.id==='b-type'){barOpts($('b-bar'),t.value,CF.barrier);$('b-bar').parentNode.style.opacity=hasBar(t.value)?1:.5;checkAvail('b-av',qs('.mk[data-k="bld"]').value,t.value)}
+  if(t.id==='b-cat'){pushHist();const g=CATG[t.value][0];fillTT(t.value,g);fillSide(g,GSIDES[g][0][0]);refreshBar()}
+  else if(t.id==='b-tt'){pushHist();fillSide(t.value,GSIDES[t.value][0][0]);refreshBar()}
+  else if(t.id==='b-side'){pushHist();refreshBar()}
   if(t.id==='b-entry')$('b-erule').style.display=t.value==='digit'?'':'none';
   if(t.id==='xmlfile'&&t.files[0]){const f=t.files[0],r=new FileReader();r.onload=()=>importXML(r.result,f.name).catch(x=>toast(x.message,1));r.readAsText(f);t.value=''}
-  if(qs('#p-builder').contains(t))formToCfg();
+  if(qs('#p-builder').contains(t)){if(!['b-cat','b-tt','b-side'].includes(t.id))pushHist();formToCfg();checkAvail('b-av',CF.symbol,CF.type)}
 });
 document.addEventListener('input',e=>{if(e.target.id==='m-dur'||e.target.id==='m-stake')quoteAll()});
 async function aiAsk(){
@@ -1038,7 +1183,7 @@ if(CFG.AI_ENDPOINT)$('ai-box').hidden=false;
 $('ai-b').innerHTML=[0,1,2,3,4,5,6,7,8].map(i=>`<option value="${i}"${i===4?' selected':''}>Over ${i} / Under ${i+1}</option>`).join('');
 $('dg-b').innerHTML=[0,1,2,3,4,5,6,7,8,9].map(i=>`<option${i===4?' selected':''}>${i}</option>`).join('');
 connect();
-fillMk();cfgToForm();renderPanel();renderRun();renderDash();renderAuto();loadBots();
+fillMk();cfgToForm();applyPos();renderPanel();renderRun();renderDash();renderAuto();loadBots();
 resume();
 route();
 </script>
