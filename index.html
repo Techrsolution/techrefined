@@ -327,7 +327,7 @@ ul.sig{margin:0;padding-left:18px}ul.sig li{margin:3px 0}
 <section class="page" id="p-auto">
   <h2 class="ptitle" style="text-align:center">Auto Trades Analysis</h2>
   <div class="card matrix">
-    <div class="mx-h"><div><small>AI MARKET MATRIX</small><h3>Digit Scanner</h3></div><span class="state" id="a-state">IDLE</span></div>
+    <div class="mx-h"><div><small>AI MARKET MATRIX</small><h3>Digit Scanner <span class="note">· Volatility indices only</span></h3></div><span class="state" id="a-state">IDLE</span></div>
     <div class="seg" id="a-mode"><button data-m="ou" class="on">Over / Under</button><button data-m="eo">Even / Odd</button><button data-m="md">Matches / Differs</button><button data-m="rf">Rise / Fall</button></div>
     <div class="row">
       <label>Stake<input id="a-stake" type="number" min="0.35" step="0.01" value="1"></label>
@@ -341,7 +341,8 @@ ul.sig{margin:0;padding-left:18px}ul.sig li{margin:3px 0}
     </div>
     <div class="mkh"><span>MARKET</span><span id="a-cnt">0 markets ready</span></div>
     <div class="mlog" id="a-log">Awaiting scan…</div>
-    <div class="stat2" id="a-msg">Standby — ready to scan every synthetic market.</div>
+    <div class="stat2" id="a-msg">Standby — ready to scan every Volatility market (Volatility 10 to 100 and the 1-second versions).</div>
+    <label class="tog"><input type="checkbox" id="a-auto" checked> Start trading automatically on the best market found</label>
     <button class="cta" id="a-scan" data-act="a-scan">Scan for live market</button>
     <button class="cta go" id="a-go" data-act="a-go" disabled>Start trading</button>
     <p class="note" style="margin-top:10px">"Ready" means a market's recent win rate beats the contract's theoretical odds by at least 2 points. That describes the past sample only. Random indices have no guaranteed edge.</p>
@@ -850,17 +851,19 @@ function evalMarket(s,d,prices){
   return best;
 }
 const NEEDT={ou:'DIGITOVER',eo:'DIGITEVEN',md:'DIGITMATCH',rf:'CALL'};
+const isVol=x=>/^(R_\d+|1HZ\d+V)$/.test(x.s)||/^Volatility\s/i.test(x.name||'');
 async function scan(){
   if(A.scanning||B.run)return;
   if(!W.ws||W.ws.readyState!==1){toast('Not connected yet. Try again in a moment.',1);return}
   A.scanning=true;A.found=[];A.best=null;$('a-scan').disabled=true;$('a-go').disabled=true;$('a-log').textContent='Scanning…';renderAuto();
-  const q=SYMS.slice(),total=q.length;let done=0;
+  const q=SYMS.filter(isVol),total=q.length;let done=0;if(!total){A.scanning=false;$('a-scan').disabled=false;$('a-msg').textContent='No Volatility markets in the list yet. Check the connection and try again.';return}
   const work=async s=>{try{const av=await avail(s.s);if(av&&!av.has(NEEDT[A.mode]))return;
     const h=await send({ticks_history:s.s,count:SAMPLE,end:'latest',style:'ticks'}),pr=h.history.prices.map(Number),d=pr.map(p=>lastDigit(p,h.pip_size!=null?h.pip_size:s.dec));
-    const r=evalMarket(s,d,pr);if(r)A.found.push(r)}catch(e){}finally{done++;$('a-msg').textContent='Scanning '+done+' / '+total+' markets…'}};
+    const r=evalMarket(s,d,pr);if(r)A.found.push(r)}catch(e){}finally{done++;$('a-msg').textContent='Scanning '+done+' / '+total+' Volatility markets…'}};
   await Promise.all(Array.from({length:4},async()=>{while(q.length)await work(q.shift())}));
   A.found.sort((a,b)=>b.edge-a.edge);A.best=A.found[0]||null;A.scanning=false;$('a-scan').disabled=false;renderAuto();
-  $('a-msg').textContent=A.best?'Best match: '+A.best.name+' · '+A.best.label+' ('+(A.best.win*100).toFixed(1)+'% vs '+(A.best.th*100).toFixed(0)+'% theory).':'No market meets the threshold right now. Scan again in a minute or try another risk set.';
+  $('a-msg').textContent=A.best?'Best match: '+A.best.name+' · '+A.best.label+' ('+(A.best.win*100).toFixed(1)+'% vs '+(A.best.th*100).toFixed(0)+'% theory).':'No Volatility market meets the threshold right now. Scan again in a minute or try another risk set.';
+  if(A.best&&$('a-auto').checked){if(S.auth)autoStart(A.best);else $('a-msg').textContent+=' Connect your account to start trading automatically.'}
 }
 function renderAuto(){
   qsa('#a-mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===A.mode));qsa('#a-rs button').forEach(b=>b.classList.toggle('on',b.dataset.r===A.risk));
@@ -871,7 +874,9 @@ function renderAuto(){
   const go=$('a-go');go.disabled=!run&&!A.best;go.textContent=run?'Stop trading':(A.best?'Start trading: '+A.best.name+' · '+A.best.label:'Start trading');go.className='cta '+(run?'stop':'go');
 }
 function autoStart(f){
-  const t=TYPE(f.type);botStart({name:'Auto',symbol:f.sym,type:f.type,barrier:f.barrier,dur:t.g==='rf'?5:1,stake:+$('a-stake').value||1,mart:1,max:+$('a-n').value||5,tp:+$('a-tp').value||0,sl:+$('a-sl').value||0,entry:'now',bulk:1},'auto').then(renderAuto);
+  const t=TYPE(f.type),cfg={name:'AI Scanner · '+f.label,symbol:f.sym,type:f.type,barrier:f.barrier,dur:t.g==='rf'?5:1,stake:+$('a-stake').value||1,mart:1,max:+$('a-n').value||5,tp:+$('a-tp').value||0,sl:+$('a-sl').value||0,entry:'now',bulk:1};
+  CF=Object.assign({},DEF,cfg);store.set('cfg',CF);cfgToForm();
+  botStart(cfg,'auto').then(renderAuto);
 }
 
 /* ---------- Trading View page ---------- */
